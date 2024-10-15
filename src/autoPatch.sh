@@ -138,16 +138,6 @@ if [ -z $libPath ]; then
 	echo -e "\e[34m[?]\e[0m Choose a LIB to PATCH:"
 	select obj in ${aioList[@]} "Quit"; do
 		if [ "$obj" != "Quit" ]; then
-			# echo "Patch elf"
-			# echo "$1: ${obj}"
-			
-			# libc=${aioDir}${obj}
-			# ld=($(ls -d ${libc}/* | grep "ld-.*\.so"))
-
-			# if [ ${#ld} = 0 ]; then
-			# 	echo 'error'
-			# 	exit
-			# fi
 			libInfo="${obj}"
 			path="${aioDir}/${obj}"
 			checkLib "$path"
