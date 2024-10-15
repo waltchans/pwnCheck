@@ -13,7 +13,11 @@ travereBin(){
         if [[ $realPath == "$srcPath"* ]];then
             hadFound=1
             echo "Remove ${i}"
-            rm -f "$i"
+            ${rmCmd} -f "$i"
+            if [ $? -ne 0 ]; then
+                echo "Delete link Fault."
+                exit 1
+            fi
         fi
     done
     
@@ -28,7 +32,16 @@ getBinPath() {
     done
 
 }
+
+if [[ "$binPath" == "/usr/bin" ]];then
+    rmCmd="sudo rm"
+else
+    rmCmd="rm"
+fi
+
+
 travereBin
+
 
 if [ -z $hadFound ];then
     getBinPath

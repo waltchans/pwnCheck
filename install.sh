@@ -44,8 +44,10 @@ cmdExist "ROPgadget"
 cmdExist "patchelf"
 cmdExist "seccomp-tools"
 
+
 # Load old config
 if [ -f "$configPath" ]; then
+    ${srcPath}/uninstall.sh
     cp "$configPath" "${configPath}_bak"
     trap 'echo "Stop while running!"; cp "${configPath}_bak" "$configPath"; rm -f "${configPath}_bak"; exit' INT
 
@@ -65,7 +67,7 @@ binPath="$HOME/.local/bin"
 
 # Set config from user
 glibcAllPath=$(inputCfg "Set glibc-all-in-one path" "$glibcAllPath")
-if [ -d "$glibcAllPath" ];then
+if [ ! -d "$glibcAllPath" ];then
     echo "[!] glibc-all-in-one Path is illegal."
 fi
 patchedSuffix=$(inputCfg "Set the SUFFIX of the patched elf" "$patchedSuffix")
@@ -93,21 +95,22 @@ if [[ ":$PATH:" != *":$binPath:"* ]]; then
     binPath=
     getBinPath
 fi
-binPath=
+
 if [ -z $binPath ];then
     echo "Need sudo to make link in /usr/bin."
     binPath="/usr/bin"
-    sudo ln -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
-    if [ $? -ne 0 ]; then
-        echo "Make link Error."
-        exit 1
-    fi
-    sudo ln -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
-else 
-    ln -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
-    ln -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
+    lnCmd="sudo ln"
+else
+    lnCmd="ln"
 fi
 putCfg "binPath" "$binPath"
+
+$lnCmd -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
+if [ $? -ne 0 ]; then
+    echo "Make link Fault. Exit."
+    exit 1
+fi
+$lnCmd -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
 
 rm -f "${configPath}_bak"
 echo "Finish."
