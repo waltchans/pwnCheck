@@ -64,7 +64,7 @@ echo -ne "\e[0m"
 if [ ${#libc_path_list[@]} -gt 0 ]; then
     printf "Find \33[31m%d\33[0m Libc in current path.\n" ${#libc_path_list[@]}
     if [ ${#libc_path_list[@]} -gt 1 ]; then
-        read -t 5 -p "Switch the libc_path: [1-${#libc_path_list[@]}]" answer
+        read -t 20 -p "Switch the libc_path: [1-${#libc_path_list[@]}]" answer
         if [ -z $answer ]; then
             echo "\nTimeout! [1] was selected."
             answer=1
@@ -72,11 +72,11 @@ if [ ${#libc_path_list[@]} -gt 0 ]; then
             echo "[${answer}] was selected."
             
         fi
-        if [ $answer -gt ${#libc_path_list[@]} ] || [ $answer -le 0] ; then
+        if [ $answer -gt ${#libc_path_list[@]} ] || [ $answer -le 0 ] ; then
             echo " [+] Out of range!"
             exit 1
         else
-            answer=$[answer-1]
+            answer=$((answer-1))
             libc_path=${libc_path_list[$answer]}
             lib_ver=${lib_ver_list[$answer]}
         fi

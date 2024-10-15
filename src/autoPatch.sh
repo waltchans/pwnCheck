@@ -101,6 +101,7 @@ if [ ! -z $2 ]; then
 		if [ -f "$argLib" ]; then
 			extractLib "$argLib"
 			checkLib "$(dirname '${argLib}')"
+			clRes="$?"
 			libcPath="$argLib"
 		else
 			checkLib "$argLib"
@@ -136,8 +137,8 @@ if [ -z $libPath ]; then
 		fi
 	fi
 	echo -e "\e[34m[?]\e[0m Choose a LIB to PATCH:"
-	select obj in ${aioList[@]} "Quit"; do
-		if [ "$obj" != "Quit" ]; then
+	select obj in ${aioList[@]} "NO Patch"; do
+		if [ "$obj" != "NO Patch" ]; then
 			libInfo="${obj}"
 			path="${aioDir}/${obj}"
 			checkLib "$path"

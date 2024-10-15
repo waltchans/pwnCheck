@@ -19,7 +19,6 @@ inputCfg() {
 putCfg() {
     local varName="$1"
     local varVal="$2"
-    
     printf "%s: %s\n" "$1" "$2" >> "$configPath"
 }
 
@@ -31,8 +30,20 @@ getBinPath() {
             break
         fi
     done
-
 }
+cmdExist() {
+    command -v "$1" >/dev/null 2>&1 
+    ret="$?"
+    if [ $ret -ne 0 ]; then
+        echo "[!] Command \"${1}\" NOT found."
+    fi
+}
+
+cmdExist "checksec"
+cmdExist "ROPgadget"
+cmdExist "patchelf"
+cmdExist "seccomp-tools"
+
 # Load old config
 if [ -f "$configPath" ]; then
     cp "$configPath" "${configPath}_bak"
@@ -54,11 +65,20 @@ binPath="$HOME/.local/bin"
 
 # Set config from user
 glibcAllPath=$(inputCfg "Set glibc-all-in-one path" "$glibcAllPath")
+if [ -d "$glibcAllPath" ];then
+    echo "[!] glibc-all-in-one Path is illegal."
+fi
 patchedSuffix=$(inputCfg "Set the SUFFIX of the patched elf" "$patchedSuffix")
 checkCmd=$(inputCfg "Set command name of checkAll" "$checkCmd")
 patchCmd=$(inputCfg "Set command name of autoPatch" "$patchCmd")
 
-
+# write conf
+echo -e "Writing config...\r"
+echo "# config of autoElfCheck" > "$configPath"
+putCfg "glibcAllPath" "$glibcAllPath"
+putCfg "patchedSuffix" "$patchedSuffix"
+putCfg "patchCmd" "$patchCmd"
+putCfg "checkCmd" "$checkCmd"
 
 if [ $? -eq 0 ];then
     echo "Write config sucess."
@@ -73,22 +93,20 @@ if [[ ":$PATH:" != *":$binPath:"* ]]; then
     binPath=
     getBinPath
 fi
+binPath=
 if [ -z $binPath ];then
+    echo "Need sudo to make link in /usr/bin."
     binPath="/usr/bin"
     sudo ln -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
+    if [ $? -ne 0 ]; then
+        echo "Make link Error."
+        exit 1
+    fi
     sudo ln -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
 else 
     ln -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
     ln -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
 fi
-
-# write conf
-echo -e "Writing config...\r"
-echo "# config of autoElfCheck" > "$configPath"
-putCfg "glibcAllPath" "$glibcAllPath"
-putCfg "patchedSuffix" "$patchedSuffix"
-putCfg "patchCmd" "$patchCmd"
-putCfg "checkCmd" "$checkCmd"
 putCfg "binPath" "$binPath"
 
 rm -f "${configPath}_bak"
