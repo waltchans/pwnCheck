@@ -1,8 +1,14 @@
 #!/bin/bash
-libcdir="/glibc-all-in-one/"
-patchCmd="pelf"
-work_location="$(pwd)"
+# libcdir="/glibc-all-in-one/"
+
+# work_location="$(pwd)"
 lineChr='-'
+
+srcPath=$(dirname `readlink -e "$0"`)/../
+configPath="${srcPath}/config.conf"
+patchCmd=$(grep <"$configPath" "patchCmd" | awk -F "[ :=]+" '{print $2}')
+
+
 # echo $0
 # echo $1
 # echo $2
