@@ -55,8 +55,8 @@ binPath="$HOME/.local/bin"
 # Set config from user
 glibcAllPath=$(inputCfg "Set glibc-all-in-one path" "$glibcAllPath")
 patchedSuffix=$(inputCfg "Set the SUFFIX of the patched elf" "$patchedSuffix")
-checkCmd=$(inputCfg "Set command name of autoCheckElf" "$checkCmd")
-patchCmd=$(inputCfg "Set command name of autoPatchElf" "$patchCmd")
+checkCmd=$(inputCfg "Set command name of checkAll" "$checkCmd")
+patchCmd=$(inputCfg "Set command name of autoPatch" "$patchCmd")
 
 
 

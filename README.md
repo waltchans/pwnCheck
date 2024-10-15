@@ -14,7 +14,7 @@
 
 上述工作大部分命令过于繁琐，因此将其集成在脚本中，实现自动化准备工作。
 
-![image-20241015142817961](./assert/autoCheck)
+![image-20241015142817961](./assert/autoCheck.png)
 
 ## 安装
 
@@ -30,7 +30,7 @@ cd pwnCheck
 
 在安装过程中，需设置glibc-all-in-one的地址。可**自定义**命令名称，回车表示采取`[ ]`内的默认值。
 
-![image-20241015144039036](./assert/install)
+![image-20241015144039036](./assert/install.png)
 
 ## 使用
 
@@ -68,19 +68,19 @@ pelf <elf> [lib]
 
 指定lib路径，无ld则自动匹配glibc-all-in-one：
 
-![image-20241015153025477](./assert/patchByPath)
+![image-20241015153025477](./assert/patchByPath.png)
 
 指定版本，仅显示匹配项:
 
-![image-20241015150142792](./assert/patchByVersion)
+![image-20241015150142792](./assert/patchByVersion.png)
 
 若指定lib选项时无法匹配版本，则会提供全部选项以供选择。
 
-![image-20241015152832577](./assert/patchNoMatch)
+![image-20241015152832577](./assert/patchNoMatch.png)
 
 ##### 覆盖提示
 
 若文件已存在patched版本，则显示已patched文件链接信息，并询问是否覆盖：
 
-![image-20241015153230915](./assert/hadPatch)
+![image-20241015153230915](./assert/hadPatch.png)
 
