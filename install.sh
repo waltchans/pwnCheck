@@ -70,11 +70,17 @@ fi
 # Make link
 echo "Make link to script..."
 if [[ ":$PATH:" != *":$binPath:"* ]]; then
+    binPath=
     getBinPath
 fi
-ln -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
-ln -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
-
+if [ -z $binPath ];then
+    binPath="/usr/bin"
+    sudo ln -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
+    sudo ln -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
+else 
+    ln -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
+    ln -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
+fi
 
 # write conf
 echo -e "Writing config...\r"
