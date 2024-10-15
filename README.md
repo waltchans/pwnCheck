@@ -49,7 +49,7 @@ celf <elf> [lib]
 
 auto patch elf. 自动修改ELF的动态链接器。默认命令名称为`pelf`。
 
-```
+```bash
 pelf <elf> [lib]
 ```
 
