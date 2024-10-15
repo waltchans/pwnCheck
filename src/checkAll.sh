@@ -1,7 +1,5 @@
 #!/bin/bash
-# libcdir="/glibc-all-in-one/"
 
-# work_location="$(pwd)"
 lineChr='-'
 
 srcPath=$(dirname `readlink -e "$0"`)/../
