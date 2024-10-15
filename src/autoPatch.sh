@@ -66,7 +66,7 @@ extractLib() {
 	local libVersion=$(strings "$libcFile" | grep -oP 'Library \(\K[^)]*')
 	local libVer=${libVersion##* }
 	if [ -z "$elfArch" ] || [ -z "$libVer" ]; then
-		echo -e "\33[31m[!] Error: Fault in extract libc infomation.\33[0m"
+		echo -e "\e[31m[!] Error: Fault in extract libc infomation.\e[0m"
 		exit 1
 	fi
 	libInfo="${libVer}_${elfArch}"
@@ -76,19 +76,20 @@ extractLib() {
 checkLib() {
 	local path="$1"
 	if [ ! -d "$path" ]; then
-		return 1
-	fi
-	local ldList=(`find "$path" -type f -name "ld-*.so" -o -name "ld-linux*.so.2"`)
-	if [ ${#ldList[@]} -eq 0 ]; then
-		return 2
+		return 3
 	fi
 	local libcList=(`find "$path" -type f -name "libc-*.so" -o -name "libc.so.6"`)
 	if [ ${#libcList[@]} -eq 0 ]; then
-		return 3
+		return 2
 	fi
-	libPath="$path"
-	ldPath="${ldList[0]}"
 	libcPath="${libcList[0]}"
+	
+	local ldList=(`find "$path" -type f -name "ld-*.so" -o -name "ld-linux*.so.2"`)
+	if [ ${#ldList[@]} -eq 0 ]; then
+		return 1
+	fi
+	ldPath="${ldList[0]}"
+	libPath="$path"
 	return 0
 }
 
@@ -96,23 +97,29 @@ checkLib() {
 aioDir=${aioDir%/}
 if [ ! -z $2 ]; then
 	argLib="$2"
-	if [ -f "$argLib" ]; then
-		extractLib "$argLib"
-		printf "[+] Libc Info: \33[93m%s\33[0m -- %s\n" "${libInfo}" "$(dirname $argLib)/$(basename $argLib)"
-		checkLib "$(dirname '${argLib}')"
-		if [ $? -gt 0 ]; then
-			echo -e "\e[31m[!]\e[0m No match ld. So match in the LIBs. "
-			checkLib "${aioDir}/${libInfo}"
-			if [ $? -gt 0 ]; then 
-				echo -e "\e[31m[!]\e[0m There is no match in the LIBs. "
-			fi
+	if [ -e "$argLib" ]; then
+		if [ -f "$argLib" ]; then
+			extractLib "$argLib"
+			checkLib "$(dirname '${argLib}')"
+			libcPath="$argLib"
+		else
+			checkLib "$argLib"
+			clRes="$?"
+			extractLib "${libcPath}"
 		fi
-	elif [ -d "$argLib" ]; then
-		checkLib "$argLib"
-		if [ $? -gt 0 ]; then 
+
+		if [ $clRes -lt 2 ]; then 
+			printf "[+] Libc Info: \33[93m%s\33[0m -- %s\n" "${libInfo}" "$(dirname $libcPath)/$(basename $libcPath)"
+			if [ $clRes -gt 0 ]; then
+				echo -e "\e[31m[!]\e[0m No match ld. So match in the LIBs. "
+				checkLib "${aioDir}/${libInfo}"
+				if [ $? -gt 0 ]; then 
+					echo -e "\e[31m[!]\e[0m There is no match in the LIBs. "
+				fi
+			fi
+		else
 			echo -e "\e[31m[!]\e[0m The LIB Path is error. "
 		fi
-		extractLib "${libcPath}"
 	else
 		libFilt="${argLib}"
 	fi

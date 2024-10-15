@@ -8,11 +8,11 @@ binPath=$(grep <"$configPath" "binPath" | awk -F "[ :=]+" '{print $2}')
 
 travereBin(){
     local lkLs=($(find "$binPath"))
-    echo "$lkLs"
     for i in ${lkLs[@]};do
         realPath=$(readlink -e "$i")
         if [[ $realPath == "$srcPath"* ]];then
             hadFound=1
+            echo "Remove ${i}"
             rm -f "$i"
         fi
     done

@@ -46,7 +46,7 @@ fi
 
 
 # Default parameter
-glibcAllPath=${glibcAllPath:-"/glibc-all-in-one"}
+glibcAllPath=${glibcAllPath:-"/glibc-all-in-one/libs"}
 patchedSuffix=${patchedSuffix:-"_pe"}
 patchCmd=${patchCmd:-"pelf"}
 checkCmd=${checkCmd:-"celf"}
@@ -72,8 +72,8 @@ echo "Make link to script..."
 if [[ ":$PATH:" != *":$binPath:"* ]]; then
     getBinPath
 fi
-ln -s "${srcPath}/src/autoCheckElf.sh" "${binPath}/${checkCmd}"
-ln -s "${srcPath}/src/autoPatchElf.sh" "${binPath}/${patchCmd}"
+ln -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
+ln -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
 
 
 # write conf
@@ -85,5 +85,5 @@ putCfg "patchCmd" "$patchCmd"
 putCfg "checkCmd" "$checkCmd"
 putCfg "binPath" "$binPath"
 
-
+rm -f "${configPath}_bak"
 echo "Finish."

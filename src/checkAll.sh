@@ -191,5 +191,7 @@ case $answer in
         seccomp-tools dump "./$elfName"
         ;;
 esac
-echo "end"
+
+drawLine
+echo "[+] Check End."
 
