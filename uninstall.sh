@@ -7,6 +7,8 @@ configPath="${srcPath}/config.conf"
 binPath=$(grep <"$configPath" "binPath" | awk -F "[ :=]+" '{print $2}')
 
 travereBin(){
+    local IFS='
+'
     local lkLs=($(find "$binPath"))
     for i in ${lkLs[@]};do
         realPath=$(readlink -e "$i")
@@ -39,13 +41,14 @@ else
     rmCmd="rm"
 fi
 
-
-travereBin
-
+if [ -d "$binPath" ]; then
+    travereBin
+fi
 
 if [ -z $hadFound ];then
     getBinPath
 fi
+
 if [ -z $hadFound ];then
     echo "Not Found link."
 else

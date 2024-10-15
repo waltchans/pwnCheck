@@ -6,6 +6,7 @@ srcPath=$(dirname `readlink -e "$0"`)/../
 configPath="${srcPath}/config.conf"
 patchCmd=$(grep <"$configPath" "patchCmd" | awk -F "[ :=]+" '{print $2}')
 
+unset IFS
 if [ $# -gt 2 ]; then
 	echo 'Up to 2 parameter!'
 	exit
@@ -43,26 +44,30 @@ else
 fi
 
 # check libc version
+# let IFS='\n' 
+IFS='
+'
 if [ ! -z $2 ] && [ -e $2 ]; then
     libc_path_list=(`find "$2" -type f -name "libc-*.so" -o -name "libc.so.6"`)
 else
     libc_path_list=(`find . -type f -name "libc-*.so" -o -name "libc.so.6"`)
 fi
+unset IFS
 
 drawLine "Libc Check"
 echo -ne "\e[37m"
 printf "[+] Libc Found: \n"
 for i in ${!libc_path_list[@]};do
-    libc_path=${libc_path_list[$i]}
-    lib_ver=$(strings $libc_path | grep -oP 'Library \(\K[^)]*')
-    lib_ver_list[$i]=${lib_ver}
+    libc_path="${libc_path_list[$i]}"
+    lib_ver=$(strings "$libc_path" | grep -oP 'Library \(\K[^)]*')
+    lib_ver_list[$i]="${lib_ver}"
     printf " [%d] %s \t%s\n" "$[i+1]" "$lib_ver" "$libc_path"
 done
 echo -ne "\e[0m"
 
 
 if [ ${#libc_path_list[@]} -gt 0 ]; then
-    printf "Find \33[31m%d\33[0m Libc in current path.\n" ${#libc_path_list[@]}
+    printf "Find \33[31m%d\33[0m Libc in current path.\n" "${#libc_path_list[@]}"
     if [ ${#libc_path_list[@]} -gt 1 ]; then
         read -t 20 -p "Switch the libc_path: [1-${#libc_path_list[@]}]" answer
         if [ -z $answer ]; then
@@ -77,12 +82,12 @@ if [ ${#libc_path_list[@]} -gt 0 ]; then
             exit 1
         else
             answer=$((answer-1))
-            libc_path=${libc_path_list[$answer]}
-            lib_ver=${lib_ver_list[$answer]}
+            libc_path="${libc_path_list[$answer]}"
+            lib_ver="${lib_ver_list[$answer]}"
         fi
     else
-        libc_path=${libc_path_list[0]}
-        lib_ver=${lib_ver_list[0]}
+        libc_path="${libc_path_list[0]}"
+        lib_ver="${lib_ver_list[0]}"
     fi
     
 else

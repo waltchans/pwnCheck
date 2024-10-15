@@ -47,7 +47,8 @@ cmdExist "seccomp-tools"
 
 # Load old config
 if [ -f "$configPath" ]; then
-    ${srcPath}/uninstall.sh
+
+   
     cp "$configPath" "${configPath}_bak"
     trap 'echo "Stop while running!"; cp "${configPath}_bak" "$configPath"; rm -f "${configPath}_bak"; exit' INT
 
@@ -55,6 +56,11 @@ if [ -f "$configPath" ]; then
     patchedSuffix=$(getCfg "patchedSuffix")
     patchCmd=$(getCfg "patchCmd")
     checkCmd=$(getCfg "checkCmd")
+    binPath=$(getCfg "binPath")
+    
+    if [ -d "$binPath" ]; then
+        ${srcPath}/uninstall.sh
+    fi
 fi
 
 
@@ -103,7 +109,7 @@ if [ -z $binPath ];then
 else
     lnCmd="ln"
 fi
-putCfg "binPath" "$binPath"
+
 
 $lnCmd -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
 if [ $? -ne 0 ]; then
@@ -111,6 +117,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 $lnCmd -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
+
+putCfg "binPath" "$binPath"
 
 rm -f "${configPath}_bak"
 echo "Finish."
