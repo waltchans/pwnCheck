@@ -29,7 +29,7 @@ drawLine(){
 getGadget(){
     local rfile="$1"
     drawLine "Gadgets in $2"
-    ROPgadget --binary "./$rfile" --only 'syscall|pop|ret' | grep -v "ret .*" |grep -E "syscall|rdi|rsi|rdx|rcx|r10|r8|r9|: ret"   
+    ROPgadget --binary "./$rfile" --only 'syscall|pop|ret' | grep -v ": ret .*" |grep -E "syscall|rdi|rsi|rdx|rcx|r10|r8|r9|: ret"   
     
 }
 
@@ -95,6 +95,10 @@ else
 fi
 
 printf "\n[+] Libc Info:\n  Version:\t\33[92m%s\33[0m\n  Libc Path:\t%s\n\n" "${lib_ver}" "${libc_path}"
+
+# one gadget
+drawLine "One Gadget"
+one_gadget "$libc_path"
 
 # get gadget which most commonly used 
 getGadget "$elfName" "ELF"
