@@ -4,7 +4,7 @@ lineChr='-'
 
 srcPath=$(dirname `readlink -e "$0"`)/../
 configPath="${srcPath}/config.conf"
-patchCmd=$(grep <"$configPath" "patchCmd" | awk -F "[ :=]+" '{print $2}')
+patchCmd=$(grep <"$configPath" "patchCmd" | awk -F "[:=]+" '{print $2}')
 
 unset IFS
 if [ $# -gt 2 ]; then
@@ -20,10 +20,10 @@ else
 fi
 
 drawLine(){
-	local ScreenLen=$(stty size |awk '{print $2}')
-	local TitleLen=$(echo -n $1 |wc -c)
+	local ScreenLen=$(stty size | awk '{print $2}')
+	local TitleLen=$(echo -n $1 | wc -c)
 	local LineLen=$(((${ScreenLen} - ${TitleLen}) / 2 ))
-	yes ${lineChr} |sed ''''${LineLen}'''q' |tr -d "\n" && echo -n $1 && yes ${lineChr} |sed ''''${LineLen}'''q' |tr -d "\n" && echo
+	yes ${lineChr} |sed ''''${LineLen}'''q' | tr -d "\n" && echo -n $1 && yes ${lineChr} |sed ''''${LineLen}'''q' | tr -d "\n" && echo
 
 }
 getGadget(){

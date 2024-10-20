@@ -2,7 +2,7 @@
 
 srcPath=$(dirname `readlink -e "$0"`)/../
 configPath="${srcPath}/config.conf"
-aioDir=$(grep <"$configPath" "glibcAllPath" | awk -F "[ :=]+" '{print $2}')
+aioDir=$(grep <"$configPath" "glibcAllPath" | awk -F "[:=]+" '{print $2}')
 
 
 lineChr='-'

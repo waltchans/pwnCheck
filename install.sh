@@ -5,7 +5,7 @@ configPath="${srcPath}/config.conf"
 
 getCfg() {
     local config=${2:-$configPath}
-    echo $(grep <"$config" "$1" | awk -F "[ :=]+" '{print $2}')
+    echo $(grep <"$config" "$1" | awk -F "[:=]+" '{print $2}')
 }
 inputCfg() {
     local info="$1"
@@ -19,7 +19,7 @@ inputCfg() {
 putCfg() {
     local varName="$1"
     local varVal="$2"
-    printf "%s: %s\n" "$1" "$2" >> "$configPath"
+    printf "%s=%s\n" "$1" "$2" >> "$configPath"
 }
 
 getBinPath() {
