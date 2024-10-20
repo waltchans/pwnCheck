@@ -127,7 +127,8 @@ if [ ! -z $2 ]; then
 fi
 
 if [ -z $libPath ]; then
-	aioList=$( ls -l "${aioDir}/" | grep '^d' | cut -c 44- )
+	# aioList=$( ls -l "${aioDir}/" | grep '^d' | cut -c 44- )
+	aioList=$( find "${aioDir}/" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; )
 	if [ ! -z "$libFilt" ]; then
 		filtRes=$( echo "$aioList" | grep "$libFilt" )
 		if [ ${#filtRes[@]} -gt 0 ]; then
