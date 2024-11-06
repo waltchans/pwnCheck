@@ -7,12 +7,11 @@ configPath="${srcPath}/config.conf"
 binPath=$(grep <"$configPath" "binPath" | awk -F "[ :=]+" '{print $2}')
 
 travereBin(){
-    local IFS='
-'
+    local IFS=$'\n'
     local lkLs=($(find "$binPath"))
     for i in ${lkLs[@]};do
-        realPath=$(readlink -e "$i")
-        if [[ $realPath == "$srcPath"* ]];then
+        realPath=$(readlink -f "$i")
+        if [[ "$realPath" == "$srcPath"* ]];then
             hadFound=1
             echo "Remove ${i}"
             ${rmCmd} -f "$i"
@@ -25,7 +24,7 @@ travereBin(){
     
 }
 getBinPath() {
-    local IFS=":"
+    local IFS=$':'
     for dir in $PATH; do
         if [[ "$dir" == "$HOME"* ]]; then
             binPath="$dir"

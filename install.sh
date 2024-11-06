@@ -23,7 +23,7 @@ putCfg() {
 }
 
 getBinPath() {
-    local IFS=":"
+    local IFS=':'
     for dir in $PATH; do
         if [[ "$dir" == "$HOME"* ]]; then
             binPath="$dir"
@@ -39,6 +39,25 @@ cmdExist() {
     fi
 }
 
+createLink() {
+    local file="$1"
+    local defName="$2"
+    while [ 1 ]; do
+    
+        read -r -p "Set command name of $file. Input # NOT to set [$defName]: " cmd
+        if [[ "$cmd" == "#" ]]; then
+            return 1
+        fi
+        
+
+        $lnCmd -s "${srcPath}/src/${file}" "${binPath}/${cmd:-$defName}"
+        if [ $? -eq 0 ]; then
+            return 0
+        else
+            echo "[!] Fail to create."
+        fi
+    done
+}
 cmdExist "checksec"
 cmdExist "ROPgadget"
 cmdExist "patchelf"
@@ -54,39 +73,52 @@ if [ -f "$configPath" ]; then
 
     glibcAllPath=$(getCfg "glibcAllPath")
     patchedSuffix=$(getCfg "patchedSuffix")
-    patchCmd=$(getCfg "patchCmd")
-    checkCmd=$(getCfg "checkCmd")
+    # patchCmd=$(getCfg "patchCmd")
+    # checkCmd=$(getCfg "checkCmd")
     binPath=$(getCfg "binPath")
+    defArg=$(getCfg "defArg")
     
-    if [ -d "$binPath" ]; then
-        ${srcPath}/uninstall.sh
-    fi
+    # if [ -d "$binPath" ]; then
+    #     ${srcPath}/uninstall.sh
+    # fi
 fi
 
 
 # Default parameter
 glibcAllPath=${glibcAllPath:-"/glibc-all-in-one/libs"}
-patchedSuffix=${patchedSuffix:-"_pe"}
-patchCmd=${patchCmd:-"pelf"}
-checkCmd=${checkCmd:-"celf"}
+originFmt=${originFmt:-'$_bk'}
+patchedFmt=${patchedFmt:-'$'}
+# patchCmd=${patchCmd:-"pelf"}
+# checkCmd=${checkCmd:-"celf"}
+defArg=${defArg:-'-clorps'}
+
 binPath="$HOME/.local/bin"
 
 # Set config from user
-glibcAllPath=$(inputCfg "Set glibc-all-in-one path" "$glibcAllPath")
+while [ 1 ]; do
+glibcAllPath=$(inputCfg "Set glibc-all-in-one Path" "$glibcAllPath")
 if [ ! -d "$glibcAllPath" ];then
     echo "[!] glibc-all-in-one Path is illegal."
+else
+    break
 fi
-patchedSuffix=$(inputCfg "Set the SUFFIX of the patched elf" "$patchedSuffix")
-checkCmd=$(inputCfg "Set command name of checkAll" "$checkCmd")
-patchCmd=$(inputCfg "Set command name of autoPatch" "$patchCmd")
+done
+originFmt=$(inputCfg "Set the Format the of the backup ELF (Use $ instead of ELF )" "$originFmt")
+patchedFmt=$(inputCfg "Set the Format the of the patched ELF (Use $ instead of ELF )" "$patchedFmt")
+defArg=$(inputCfg "Set the Default Args of the all.sh" "$defArg")
+
+# checkCmd=$(inputCfg "Set command name of checkAll" "$checkCmd")
+# patchCmd=$(inputCfg "Set command name of autoPatch" "$patchCmd")
 
 # write conf
 echo -e "Writing config...\r"
 echo "# config of autoElfCheck" > "$configPath"
 putCfg "glibcAllPath" "$glibcAllPath"
-putCfg "patchedSuffix" "$patchedSuffix"
-putCfg "patchCmd" "$patchCmd"
-putCfg "checkCmd" "$checkCmd"
+putCfg "originFmt" "$originFmt"
+putCfg "patchedFmt" "$patchedFmt"
+putCfg "defArg" "$defArg"
+# putCfg "patchCmd" "$patchCmd"
+# putCfg "checkCmd" "$checkCmd"
 
 if [ $? -eq 0 ];then
     echo "Write config sucess."
@@ -109,16 +141,31 @@ if [ -z $binPath ];then
 else
     lnCmd="ln"
 fi
-
-
-$lnCmd -s "${srcPath}/src/checkAll.sh" "${binPath}/${checkCmd}"
-if [ $? -ne 0 ]; then
-    echo "Make link Fault. Exit."
-    exit 1
-fi
-$lnCmd -s "${srcPath}/src/autoPatch.sh" "${binPath}/${patchCmd}"
-
 putCfg "binPath" "$binPath"
-
 rm -f "${configPath}_bak"
-echo "Finish."
+trap 'exit' INT
+
+echo "Finish Write Config."
+echo 
+read -n1 -p $'Do you want to create Link to the script?\nIf Link is already created, you can skip this step. \nContinuing will delete the OLD link\nYour choice [Y/n]:' answer
+case $answer in
+    N|n)
+        echo 'Quit'	
+        exit 0
+        ;;
+    *)
+        echo 'To create.'
+        echo 
+        ;;
+esac
+${srcPath}/uninstall.sh
+createLink "all.sh" "pca"
+createLink "libinfo.sh" "pcl"
+createLink "onegadget.sh" "pco"
+createLink "ropgadget.sh" "pcr"
+createLink "patch.sh" "pcp"
+
+
+
+
+

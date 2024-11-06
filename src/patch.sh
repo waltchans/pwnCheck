@@ -1,45 +1,117 @@
 #!/bin/bash
 
-srcPath=$(dirname `readlink -e "$0"`)/../
-configPath="${srcPath}/config.conf"
+srcPath=$(dirname `readlink -ne "$0"`)
+configPath="${srcPath}/../config.conf"
 aioDir=$(grep <"$configPath" "glibcAllPath" | awk -F "[:=]+" '{print $2}')
+originFmt=$(grep <"$configPath" "originFmt" | awk -F "[:=]+" '{print $2}')
+patchedFmt=$(grep <"$configPath" "patchedFmt" | awk -F "[:=]+" '{print $2}')
 
 
-lineChr='-'
+originFmt=${originFmt:-'$_bk'}
+patchedFmt=${patchedFmt:-'$'}
 
 # help
-if [ $# -lt 1 ] || [ $# -gt 2 ]; then
-	cmd=$(basename "$0")
-	echo 'Patchelf with glibc-all-in-one. '
-	echo -e "Usage:\t${cmd} elf [lib|path|ver]"
-	echo 'Example:'
-	echo -e "\t${cmd} pwn libc.so.6"
-	echo -e "\t${cmd} pwn libc/"
-	echo -e "\t${cmd} pwn 2.35"
-	exit 1
-fi
+docs="Patchelf with glibc-all-in-one. 
+Usage:\t$0 elf [lib|path|ver]
+Options:
+\t-h, --help\tPrint Display this help and exit
+\t-o, --output\tSpecify output file
+Args:
+\tELF\tWitch to be patch. Optionally enter the ORIGIN name or ORIGINFMT name
+\tlib\tWitch LIB to link. If not find LD in the same path, will choose the same version in glibc-all-in-one
+\tpath\tPath to a LIB 
+\tver\tMatch the version in glibc-all-in-one
+
+Example:
+\t$0 pwn libc.so.6
+\t$0 pwn libc/
+\t$0 pwn 2.35
+"
+usage() {
+    echo -e "$docs"
+    exit 1
+}
 
 drawLine(){
+	local lineChr='-'
 	local ScreenLen=$(stty size |awk '{print $2}')
 	local TitleLen=$(echo -n $1 |wc -c)
-	local LineLen=$(((${ScreenLen} - ${TitleLen}) / 2 ))
+	local LineLen=$(((${ScreenLen} - ${TitleLen}) / 2 - 10 ))
 	yes ${lineChr} |sed ''''${LineLen}'''q' |tr -d "\n" && echo -n $1 && yes ${lineChr} |sed ''''${LineLen}'''q' |tr -d "\n" && echo
 
 }
+
+paras=$(getopt -o ho: -l help,output: -n $(basename $0) -- "$@")
+set -- $paras
+# echo "$@"
+while [ $1 ];
+do
+    case $1 in
+    -o | --output)
+		eval patchedFile=$2
+        shift 2
+        ;;
+    -h | --help)
+        usage
+		shift
+        ;;
+    --)
+        shift
+        break
+        ;;
+    esac
+done
+
+if [ $# -eq 0 ]; then
+    usage
+fi
+eval elfFile=$1
+
+elfPath=$( dirname "$elfFile" )
+elfBase=$( basename "$elfFile" )
+
+shiftFmt=${originFmt//$/'\(.*\)'}
+shiftName=$( expr match "$elfBase" "^${shiftFmt}\$" )
+if [ $? -eq 0 ]; then
+	echo "$shiftName" | grep "$elfBase" > /dev/null
+	if [ $? -eq 0 ]; then
+		elfBase="${shiftName}"
+	else
+		elfBase="${originFmt}"
+	fi
+fi
+
 # Check elf legal
-elfName="$1"
-if [ ! -f "$elfName" ]; then
-	echo -e "\33[31m[!] ELF file is illegal.\33[0m"
+
+
+originFile="$elfPath/${originFmt//$/$elfBase}"
+if [ -z $patchedFile ]; then
+	patchedFile="$elfPath/${patchedFmt//$/$elfBase}"
+fi
+
+if [ ! -f "$elfFile" ] && [ ! -f "$originFile" ]; then
+	echo -e "\e[31m[!] ELF file is illegal.\e[0m"
 	exit 1
 fi
-printf "[+] Patch ELF: %s\n" "$(dirname $elfName)/$(basename $elfName)"
+
+# backup the origin ELF file
+if [ ! -f "${originFile}" ] && [ -f "${elfFile}" ]; then
+	mv "${elfFile}" "${originFile}"
+fi
+printf "[+] Patch ELF: %s\n" "$elfPath/$elfBase"
+
+
 # check whether the patched elf existed.
-fname="${elfName}_pe"
-if [ -f ${fname} ]; then
-	echo -e '[!] The file has been \e[31mPATCHED\e[0m a LIB.'
-	drawLine "Patched Info"
+
+if [ -f "${patchedFile}" ]; then
+	if [ "$patchedFile" = "$originFile" ]; then
+		echo -e '[!] The ORIGIN ELF will be \e[31mMODIFIED\e[0m.\n    You might be UNABLE to run it.'
+	else
+		echo -e '[!] The ELF has been \e[31mPATCHED\e[0m a LIB.'
+	fi
+	drawLine "Link Info"
 	echo -ne "\e[37m"
-	ldd "${fname}"
+	ldd "${patchedFile}"
 	echo -ne "\e[0m"
 	drawLine
 	printf "\33[34m[?]\33[0m "
@@ -62,9 +134,11 @@ fi
 # get lib version from libc.so.6
 extractLib() {
 	local libcFile="$1"
-	local elfArch=$(checksec --file $elfName 2>&1 | grep -oP "Arch:     \K[^-]*")
+	local elfArch=$(checksec --file "$originFile" 2>&1 | grep -oP "Arch:     \K[^-]*")
 	local libVersion=$(strings "$libcFile" | grep -oP 'Library \(\K[^)]*')
 	local libVer=${libVersion##* }
+	echo $elfArch 
+	echo $libVer
 	if [ -z "$elfArch" ] || [ -z "$libVer" ]; then
 		echo -e "\e[31m[!] Error: Fault in extract libc infomation.\e[0m"
 		exit 1
@@ -75,16 +149,21 @@ extractLib() {
 # check lib path then load
 checkLib() {
 	local path="$1"
+	# echo "$path"
+
 	if [ ! -d "$path" ]; then
 		return 3
 	fi
+	IFS=$'\n'
 	local libcList=(`find "$path" -type f -name "libc-*.so" -o -name "libc.so.6"`)
 	if [ ${#libcList[@]} -eq 0 ]; then
 		return 2
 	fi
 	libcPath="${libcList[0]}"
-	
+	# echo "$path"
 	local ldList=(`find "$path" -type f -name "ld-*.so" -o -name "ld-linux*.so.2"`)
+	# echo "${#ldList[@]}"
+	unset IFS
 	if [ ${#ldList[@]} -eq 0 ]; then
 		return 1
 	fi
@@ -95,15 +174,16 @@ checkLib() {
 
 
 aioDir=${aioDir%/}
-if [ ! -z $2 ]; then
-	argLib="$2"
+if [ $# -ge 2 ]; then
+	eval argLib="$2"
 	if [ -e "$argLib" ]; then
 		if [ -f "$argLib" ]; then
 			extractLib "$argLib"
-			checkLib "$(dirname '${argLib}')"
+			checkLib "$( dirname "${argLib}" )"
 			clRes="$?"
 			libcPath="$argLib"
 		else
+			argLib=${argLib%/}
 			checkLib "$argLib"
 			clRes="$?"
 			extractLib "${libcPath}"
@@ -138,7 +218,7 @@ if [ -z $libPath ]; then
 		fi
 	fi
 	echo -e "\e[34m[?]\e[0m Choose a LIB to PATCH:"
-	select obj in ${aioList[@]} "NO Patch"; do
+	select obj in  "NO Patch" ${aioList[@]}; do
 		if [ "$obj" != "NO Patch" ]; then
 			libInfo="${obj}"
 			path="${aioDir}/${obj}"
@@ -154,14 +234,22 @@ fi
 # patch process
 if [ -n "$libPath" ] && [ -n "$libcPath" ] && [ -n "$ldPath" ]; then
 	echo "Patching..."
-	if [ -f ${fname} ]; then
-		rm -f "${fname}"
+	if [ ! "$patchedFile" = "$originFile" ]; then
+		if [ -f "${patchedFile}" ]; then
+			diff "${originFile}" "${patchedFile}" > /dev/null
+			if [ $? -eq 1 ]; then
+				rm -f "${patchedFile}"
+			fi
+		fi
+		cp "${originFile}" "${patchedFile}"
 	fi
-	cp "$1" "${fname}"
-	patchelf --set-interpreter "${ldPath}" ${fname}
+	# echo $libPath
+	# echo $patchedFile
+	# echo $ldPath
+	patchelf --set-interpreter "${ldPath}" "${patchedFile}"
 	ldRes=$?
-	#patchelf --replace-needed libc.so.6 "${libc}/libc.so.6" ${fname}
-	patchelf --set-rpath "${libPath}" ${fname}
+	#patchelf --replace-needed libc.so.6 "${libc}/libc.so.6" ${patchedFile}
+	patchelf --set-rpath "${libPath}" "${patchedFile}"
 	rpRes=$?
 	if [ $ldRes -eq 0 ] && [ $rpRes -eq 0 ]; then
 		echo '[+] Done!'
