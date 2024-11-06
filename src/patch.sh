@@ -70,19 +70,17 @@ eval elfFile=$1
 elfPath=$( dirname "$elfFile" )
 elfBase=$( basename "$elfFile" )
 
-shiftFmt=${originFmt//$/'\(.*\)'}
-shiftName=$( expr match "$elfBase" "^${shiftFmt}\$" )
-if [ $? -eq 0 ]; then
-	echo "$shiftName" | grep "$elfBase" > /dev/null
+if [[ "$originFmt" =~ '$' ]]; then
+	shiftFmt=${originFmt//$/'\(.*\)'}
+	shiftName=$( expr match "$elfBase" "^${shiftFmt}\$" )
 	if [ $? -eq 0 ]; then
 		elfBase="${shiftName}"
-	else
-		elfBase="${originFmt}"
 	fi
 fi
 
-# Check elf legal
 
+
+# Check elf legal
 
 originFile="$elfPath/${originFmt//$/$elfBase}"
 if [ -z $patchedFile ]; then
