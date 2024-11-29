@@ -67,8 +67,9 @@ fi
 
 
 totalInfo=$( one_gadget "$elfName" )
+totalInfo=${totalInfo//$'\nconstraints:'/'&END&'}   # 标记execve尾部
 IFS=$'\n'
-addrInfo=( $( echo "$totalInfo" | grep "execve" ) )
+addrInfo=( $( echo "$totalInfo" | grep "&END&" ) )
 unset IFS
 
 if [ $todoType -eq 3 ]; then
@@ -81,10 +82,10 @@ if [ $todoType -ge 2 ]; then
     echo "one_gadgets = ["
 
     for idx in ${!addrInfo[@]};do
-        item=${addrInfo[$idx]}
+        item=${addrInfo[$idx]%'&END&'}
         hexstr=($(echo "$item" | grep -oP "\b0x[0-9A-Fa-f]+\b" ))
         address=${hexstr[0]}
-        info=${item##*$address}	
+        info=${item##*$address}
         
         printf "    %s, # [%d]:%s \n" "$address" "$idx" "$info"
     done
