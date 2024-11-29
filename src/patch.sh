@@ -135,8 +135,8 @@ extractLib() {
 	local elfArch=$(checksec --file "$originFile" 2>&1 | grep -oP "Arch:     \K[^-]*")
 	local libVersion=$(strings "$libcFile" | grep -oP 'Library \(\K[^)]*')
 	local libVer=${libVersion##* }
-	echo $elfArch 
-	echo $libVer
+	# echo $elfArch 
+	# echo $libVer
 	if [ -z "$elfArch" ] || [ -z "$libVer" ]; then
 		echo -e "\e[31m[!] Error: Fault in extract libc infomation.\e[0m"
 		exit 1
@@ -246,7 +246,7 @@ if [ -n "$libPath" ] && [ -n "$libcPath" ] && [ -n "$ldPath" ]; then
 	# echo $ldPath
 	patchelf --set-interpreter "${ldPath}" "${patchedFile}"
 	ldRes=$?
-	#patchelf --replace-needed libc.so.6 "${libc}/libc.so.6" ${patchedFile}
+	patchelf --replace-needed libc.so.6 "${libcPath}" ${patchedFile}
 	patchelf --set-rpath "${libPath}" "${patchedFile}"
 	rpRes=$?
 	if [ $ldRes -eq 0 ] && [ $rpRes -eq 0 ]; then
