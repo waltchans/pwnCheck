@@ -122,6 +122,10 @@ fi
 
 if [ ! -z $todo_lib ]; then
     source "${srcPath}/libinfo.sh" -c "$libName"
+    # if libc not found, unset libc_path to avoid check one_gadget and ropgadget in libc
+    if [ -z $libc_path ]; then 
+        unset todo_lib
+    fi
 fi
 
 if [ ! -z $todo_one ] && [ ! -z $todo_lib ]; then
