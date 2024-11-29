@@ -72,12 +72,13 @@ addrInfo=( $( echo "$totalInfo" | grep "execve" ) )
 unset IFS
 
 if [ $todoType -eq 3 ]; then
-
     echo "$totalInfo"
+    echo
 fi
 
 if [ $todoType -ge 2 ]; then
-    echo "oneGadgets = ["
+    echo -e "\e[96m"
+    echo "one_gadgets = ["
 
     for idx in ${!addrInfo[@]};do
         item=${addrInfo[$idx]}
@@ -89,4 +90,5 @@ if [ $todoType -ge 2 ]; then
     done
 
     echo "] # python List of one_gadget"
+    echo -e "\e[0m"
 fi
