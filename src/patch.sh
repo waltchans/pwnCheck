@@ -87,19 +87,23 @@ ininput_file_path=$(dirname "$input_file_path")/$(basename "$input_file_path")
 input_file_dir=$( dirname "$input_file_path" )
 input_file_name=$( basename "$input_file_path" )
 
-# If input is origin_fmt file, transfer to old name 
-if [[ "$backup_format" =~ '$' ]]; then
-	shift_format=${backup_format//$/'\(.*\)'}
-	shift_name=$( expr match "$input_file_name" "^${shift_format}\$" )
-	if [ $? -eq 0 ]; then
-		input_file_name="${shift_name}"
-	fi
-fi
 
-# get the patch file name
-backup_file_path="$input_file_dir/${backup_format//$/$input_file_name}"
-if [ -z $patch_file_path ]; then
-	patch_file_path="$input_file_dir/${patch_format//$/$input_file_name}"
+if [ ! -z $patch_file_path ]; then
+	# if appoint output file
+	backup_file_path="$input_file_path"
+else
+	# If input is origin_fmt file, transfer to old name 
+	if [[ "$backup_format" =~ '$' ]]; then
+		shift_format=${backup_format//$/'\(.*\)'}
+		shift_name=$( expr match "$input_file_name" "^${shift_format}\$" )
+		if [ $? -eq 0 ]; then
+			input_file_name="${shift_name}"
+		fi
+	fi
+
+	# get the backup file name and the patch file name
+	backup_file_path="$input_file_dir/${backup_format//$/$input_file_name}"
+	patch_file_path="$input_file_dir/${patch_format//$/$input_file_name}"	
 fi
 
 # CHeck if elf exist
