@@ -19,6 +19,11 @@ Example:
 \t$0 ./pwn -a 'pop|ret' rdi rsi
 "
 
+reg_rul_def_32="int 0x80|eax|ebx|ecx|edx|esi|edi|ebp"
+reg_rul_def_64="syscall|rax|rdi|rsi|rdx|rcx|r10|r8|r9"
+reg_rul_def="leave|: \Kret|$reg_rul_def_64|$reg_rul_def_32"
+asm_def="leave|int|syscall|pop|ret"
+
 usage() {
     echo -e "$docs"
     exit 1
@@ -69,18 +74,18 @@ if [ $# -ge 2 ];then
 	regRul=$(echo "${reg[*]}")
     unset IFS
 fi
-asm=${asm:-"syscall|pop|ret"}
-regRul=${regRul:-"leave|syscall|rdi|rsi|rdx|rcx|r10|r8|r9|: ret"}
+asm=${asm:-$asm_def}
+regRul=${regRul:-$reg_rul_def}
 
 printf "[+] ROPgadget | ELF: %s\n" "$elfName"
 # asm=${asm:-}
 # drawLine "Gadgets in $2"
-ropRes=$( ROPgadget --binary "$elfName" --only "$asm" )
+ropRes=$( ROPgadget --multibr --binary "$elfName" --only "$asm" )
 
 if [[ "$regRul" != "ret" ]]; then
 	ropRes=$( echo "$ropRes" | grep -v ": ret .*" )
 fi
-echo "$ropRes" | grep -E "$regRul"
+echo "$ropRes" | grep -P "$regRul" --color=always
 amount=$(echo "$ropRes" | grep -cE "$regRul")
 
 printf "[-] End -- Found \33[31m%d\33[0m ROP gadget\n" "$amount"
