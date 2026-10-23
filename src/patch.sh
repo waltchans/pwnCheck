@@ -55,6 +55,15 @@ restore_origin_file_exit() {
 	exit 2
 }
 
+get_elf_arch() {
+	local file_arch=$(file -b "$1" | cut -d, -f2 | tr -d ' ')
+    case "$file_arch" in
+        *x86-64*|*X86-64*|amd64|x86_64)		echo amd64 ;;
+        *80386*|*i386*|*i486*|*i586*|*i686*|386|ia32|x86)	echo i386 ;;
+        *) echo "UNKNOWN" >&2; return 1 ;;
+    esac
+}
+
 paras=$(getopt -o ho: -l help,output: -n $(basename $0) -- "$@")
 set -- $paras
 # echo "$@"
@@ -156,7 +165,7 @@ fi
 # get lib version from libc.so.6
 extract_lib() {
 	local lib_libc_file="$1"
-	local elf_arch=$(checksec --file "$backup_file_path" 2>&1 | grep -oP "Arch:     \K[^-]*")
+	local elf_arch=$(get_elf_arch "$backup_file_path")
 	local lib_versionsion=$(strings "$lib_libc_file" | grep -oP 'Library \(\K[^)]*')
 	local lib_version=${lib_versionsion##* }
 	# echo $elf_arch 
