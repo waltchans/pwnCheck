@@ -67,15 +67,15 @@ fi
 
 
 totalInfo=$( one_gadget "$elfName" )
-totalInfo=${totalInfo//$'\nconstraints:'/'&END&'}   # 标记execve尾部
-IFS=$'\n'
-addrInfo=( $( echo "$totalInfo" | grep "&END&" ) )
-unset IFS
-
 if [ $todoType -eq 3 ]; then
     echo "$totalInfo"
     echo
 fi
+
+totalInfo=${totalInfo//$'\nconstraints:'/'&END&'}   # 标记execve尾部
+IFS=$'\n'
+addrInfo=( $( echo "$totalInfo" | grep "&END&" ) )
+unset IFS
 
 if [ $todoType -ge 2 ]; then
     echo -e "\e[96m"
@@ -87,7 +87,7 @@ if [ $todoType -ge 2 ]; then
         address=${hexstr[0]}
         info=${item##*$address}
         
-        printf "    %s, # [%d]:%s \n" "$address" "$idx" "$info"
+        printf "    %s,\t# [%d]:%s \n" "$address" "$idx" "$info"
     done
 
     echo "] # python List of one_gadget"

@@ -176,21 +176,39 @@ check_lib() {
 	if [ ! -d "$path" ]; then
 		return 3
 	fi
+
 	IFS=$'\n'
-	local libcList=(`find "$path" -type f -name "libc-*.so" -o -name "libc.so.6"`)
+	local libcList=(`find "$path" -name '.debug' -prune -o \( -type f -o -type l \) \( -name "libc-*.so" -o -name "libc.so.6" \) -print`)
 	if [ ${#libcList[@]} -eq 0 ]; then
 		return 2
 	fi
-	lib_libc_path="${libcList[0]}"
-	# echo "$path"
-	local ldList=(`find "$path" -type f -name "ld-*.so" -o -name "ld-linux*.so.2"`)
-	# echo "${#ldList[@]}"
-	unset IFS
+	local ldList=(`find "$path" -name '.debug' -prune -o \( -type f -o -type l \) \( -name "ld-*.so" -o -name "ld-linux*.so.2" \) -print`)
 	if [ ${#ldList[@]} -eq 0 ]; then
 		return 1
 	fi
-	lib_ld_path="${ldList[0]}"
-	lib_path="$path"
+	unset IFS
+
+	for elem_libc in "${libcList[@]}"; do
+    # 遍历第二个数组
+		for elem_ld in "${ldList[@]}"; do
+			elem_libc_path=$(basename "$elem_libc")
+			elem_ld_path=$(basename "$elem_ld")
+			if [[ "$elem_libc_path" == "$elem_ld_path" ]]; then
+				# 去重检查
+				lib_path="$elem_libc_path"
+				lib_libc_path="$elem_libc"
+				lib_ld_path="$elem_ld"
+				break 
+			fi
+		done
+		if [ ! -z $lib_path ];then
+			break
+		fi
+	done
+	if [ -z $lib_path ]; then
+		lib_libc_path="${libcList[0]}"
+		lib_ld_path="${ldList[0]}"
+	fi
 	return 0
 }
 
@@ -228,9 +246,9 @@ if [ $# -ge 2 ]; then
 	fi
 fi
 
-if [ -z $lib_path ]; then
+if [ -z $lib_ld_path ]; then
 	# gaio_list=$( ls -l "${gaio_dir}/" | grep '^d' | cut -c 44- )
-	gaio_list=$( find "${gaio_dir}/" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; )
+	gaio_list=$( find "${gaio_dir}/" -mindepth 1 -maxdepth 1 -type d -printf "%f\0" | sort -z | tr '\0' '\n' )
 	if [ ! -z "$lib_filt" ]; then
 		filt_res=$( echo "$gaio_list" | grep "$lib_filt" )
 		if [ ${#filt_res[@]} -gt 0 ]; then
@@ -258,7 +276,7 @@ if [ -z $lib_path ]; then
 fi
 
 # patch process
-if [ -n "$lib_path" ] && [ -n "$lib_libc_path" ] && [ -n "$lib_ld_path" ]; then
+if [ -n "$lib_ld_path" ]; then
 	echo "Patching..."
 	if [ ! "$patch_file_path" = "$backup_file_path" ]; then
 		if [ -f "${patch_file_path}" ]; then
@@ -269,15 +287,25 @@ if [ -n "$lib_path" ] && [ -n "$lib_libc_path" ] && [ -n "$lib_ld_path" ]; then
 		fi
 		cp "${backup_file_path}" "${patch_file_path}"
 	fi
-	# echo $lib_path
-	# echo $patch_file_path
-	# echo $lib_ld_path
+
+	# echo "${patch_file_path}"
+	# echo "${lib_path}"
+	# echo "${lib_ld_path}"
+	# echo "${lib_libc_path}"
+
 	patchelf --set-interpreter "${lib_ld_path}" "${patch_file_path}"
-	ld_res=$?
-	patchelf --set-rpath "${lib_path}" "${patch_file_path}"
-	patchelf --replace-needed libc.so.6 "${lib_libc_path}" ${patch_file_path}
-	rpRes=$?
-	if [ $ld_res -eq 0 ] && [ $rpRes -eq 0 ]; then
+
+	if [ -z $lib_path ]; then
+		patchelf --replace-needed libc.so.6 "${lib_libc_path}" "${patch_file_path}"
+		lib_path=$(dirname "${lib_libc_path}")
+	else
+		patchelf --set-rpath "${lib_path}" "${patch_file_path}"
+	fi
+
+	# check the patch result by ldd command
+	ldd_res=$( ldd "${patch_file_path}" | grep "not found" )
+
+	if [ -z "$ldd_res" ]; then
 		echo '[+] Done!'
 		printf "Last Patch:\t\33[92m%s\33[0m \nLib Path:\t%s\n" "${lib_info}" "${lib_path}/"
 		exit 0
